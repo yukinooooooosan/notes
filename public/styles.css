@@ -1,12 +1,12 @@
 :root {
-  color-scheme: light;
-  --bg: #f7f3ed;
-  --surface: #fffdfa;
-  --ink: #24201d;
-  --muted: #71685f;
-  --line: #ded4c8;
-  --accent: #007c89;
-  --accent-soft: #d7eef0;
+  color-scheme: dark;
+  --bg: #010102;
+  --surface: #111113;
+  --ink: #f7efe5;
+  --muted: #b9aa9c;
+  --line: #2c2a2d;
+  --accent: #b9a7ff;
+  --accent-soft: #d4c9ff;
 }
 
 * {
@@ -16,7 +16,12 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background:
+    linear-gradient(rgba(1, 1, 2, 0.96), rgba(1, 1, 2, 0.96)),
+    radial-gradient(circle at 78% 8%, rgba(159, 123, 255, 0.12), transparent 30%),
+    radial-gradient(circle at 12% 18%, rgba(210, 98, 143, 0.08), transparent 28%),
+    radial-gradient(ellipse at 82% 82%, rgba(142, 63, 118, 0.19), transparent 34%),
+    var(--bg);
   color: var(--ink);
   font-family: "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   line-height: 1.75;
@@ -24,7 +29,7 @@ body {
 
 a {
   color: inherit;
-  text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--accent) 68%, transparent);
   text-underline-offset: 0.18em;
 }
 
