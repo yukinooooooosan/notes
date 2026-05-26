@@ -13,20 +13,46 @@ export async function getStaticPaths() {
 
 const { note } = Astro.props;
 const { Content } = await render(note);
+const latestNotes = (await getCollection("notes", ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
 ---
 
 <BaseLayout title={`${note.data.title} | Yukino Notes`} description={note.data.description}>
-  <article class="note-detail">
-    <a class="back-link" href="/">Notes</a>
-    <header>
-      <time datetime={note.data.pubDate.toISOString()}>
-        {note.data.pubDate.toLocaleDateString("ja-JP")}
-      </time>
-      <h1>{note.data.title}</h1>
-      <p>{note.data.description}</p>
-    </header>
-    <div class="prose">
-      <Content />
-    </div>
-  </article>
+  <div class="note-layout">
+    <aside class="note-sidebar" aria-labelledby="latest-notes">
+      <p class="eyebrow" id="latest-notes">Latest Notes</p>
+      <nav aria-label="最近の記事">
+        {
+          latestNotes.map((latestNote) => (
+            <a
+              class:list={["sidebar-note-link", { "is-current": latestNote.id === note.id }]}
+              href={`/notes/${latestNote.id}/`}
+              aria-current={latestNote.id === note.id ? "page" : undefined}
+            >
+              <time datetime={latestNote.data.pubDate.toISOString()}>
+                {latestNote.data.pubDate.toLocaleDateString("ja-JP")}
+              </time>
+              <span>{latestNote.data.title}</span>
+            </a>
+          ))
+        }
+        <a class="sidebar-all-link" href="/">すべての記事へ</a>
+      </nav>
+    </aside>
+
+    <article class="note-detail">
+      <a class="back-link" href="/">Notes</a>
+      <header>
+        <time datetime={note.data.pubDate.toISOString()}>
+          {note.data.pubDate.toLocaleDateString("ja-JP")}
+        </time>
+        <h1>{note.data.title}</h1>
+        <p>{note.data.description}</p>
+      </header>
+      <div class="prose">
+        <Content />
+      </div>
+    </article>
+  </div>
 </BaseLayout>
