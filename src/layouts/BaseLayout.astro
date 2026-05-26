@@ -25,5 +25,92 @@ const {
     <main>
       <slot />
     </main>
+    <script is:inline>
+      const colorCodePattern = /#(?:[0-9a-fA-F]{6})(?![0-9a-fA-F])/g;
+
+      function hasColorCode(text) {
+        colorCodePattern.lastIndex = 0;
+        const result = colorCodePattern.test(text || "");
+        colorCodePattern.lastIndex = 0;
+        return result;
+      }
+
+      function createColorSwatch(color) {
+        const swatch = document.createElement("span");
+        swatch.className = "color-swatch";
+        swatch.style.backgroundColor = color;
+        swatch.title = color;
+        swatch.setAttribute("aria-label", `${color}の色見本`);
+        return swatch;
+      }
+
+      function enhanceTextNode(node) {
+        const text = node.nodeValue;
+        if (!text || !hasColorCode(text)) {
+          return;
+        }
+
+        colorCodePattern.lastIndex = 0;
+        const fragment = document.createDocumentFragment();
+        let cursor = 0;
+        let match;
+
+        while ((match = colorCodePattern.exec(text)) !== null) {
+          const color = match[0];
+          fragment.append(document.createTextNode(text.slice(cursor, match.index)));
+          const token = document.createElement("span");
+          token.className = "color-token";
+          token.append(document.createTextNode(color), createColorSwatch(color));
+          fragment.append(token);
+          cursor = match.index + color.length;
+        }
+
+        fragment.append(document.createTextNode(text.slice(cursor)));
+        node.parentNode?.replaceChild(fragment, node);
+      }
+
+      function enhanceCodeBlock(code) {
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT, {
+          acceptNode(node) {
+            return hasColorCode(node.nodeValue || "")
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_SKIP;
+          }
+        });
+
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(enhanceTextNode);
+      }
+
+      document.querySelectorAll(".prose").forEach((prose) => {
+        prose.querySelectorAll("code").forEach((code) => {
+          if (code.closest("pre")) {
+            enhanceCodeBlock(code);
+            return;
+          }
+          const colors = code.textContent?.match(colorCodePattern);
+          if (!colors) return;
+          code.insertAdjacentElement("afterend", createColorSwatch(colors[0]));
+        });
+
+        const walker = document.createTreeWalker(prose, NodeFilter.SHOW_TEXT, {
+          acceptNode(node) {
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            if (parent.closest("a, code, pre, script, style")) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return hasColorCode(node.nodeValue || "")
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_SKIP;
+          }
+        });
+
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(enhanceTextNode);
+      });
+    </script>
   </body>
 </html>
