@@ -12,7 +12,11 @@ export async function getStaticPaths() {
 }
 
 const { note } = Astro.props;
-const { Content } = await render(note);
+const basePath = import.meta.env.BASE_URL;
+const { Content, headings } = await render(note);
+const tocHeadings = headings.filter(
+  (heading) => heading.depth >= 2 && heading.depth <= 3
+);
 const latestNotes = (await getCollection("notes", ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
   .slice(0, 3);
@@ -20,6 +24,24 @@ const latestNotes = (await getCollection("notes", ({ data }) => !data.draft))
 
 <BaseLayout title={`${note.data.title} | Yukino Notes`} description={note.data.description}>
   <div class="note-layout">
+    {
+      tocHeadings.length > 0 && (
+        <aside class="note-toc" aria-labelledby="toc-title">
+          <p class="eyebrow" id="toc-title">On This Page</p>
+          <nav aria-label="この記事の目次">
+            {tocHeadings.map((heading) => (
+              <a
+                class:list={["toc-link", `toc-depth-${heading.depth}`]}
+                href={`#${heading.slug}`}
+              >
+                {heading.text}
+              </a>
+            ))}
+          </nav>
+        </aside>
+      )
+    }
+
     <aside class="note-sidebar" aria-labelledby="latest-notes">
       <p class="eyebrow" id="latest-notes">Latest Notes</p>
       <nav aria-label="最近の記事">
@@ -27,7 +49,7 @@ const latestNotes = (await getCollection("notes", ({ data }) => !data.draft))
           latestNotes.map((latestNote) => (
             <a
               class:list={["sidebar-note-link", { "is-current": latestNote.id === note.id }]}
-              href={`/notes/${latestNote.id}/`}
+              href={`${basePath}notes/${latestNote.id}/`}
               aria-current={latestNote.id === note.id ? "page" : undefined}
             >
               <time datetime={latestNote.data.pubDate.toISOString()}>
@@ -37,22 +59,96 @@ const latestNotes = (await getCollection("notes", ({ data }) => !data.draft))
             </a>
           ))
         }
-        <a class="sidebar-all-link" href="/">すべての記事へ</a>
+        <a class="sidebar-all-link" href={basePath}>すべての記事へ</a>
       </nav>
     </aside>
 
     <article class="note-detail">
-      <a class="back-link" href="/">Notes</a>
-      <header>
-        <time datetime={note.data.pubDate.toISOString()}>
-          {note.data.pubDate.toLocaleDateString("ja-JP")}
-        </time>
+      <header class="article-header">
+        <div class="article-meta">
+          <span class="article-kicker">Production Note</span>
+          <time datetime={note.data.pubDate.toISOString()}>
+            {note.data.pubDate.toLocaleDateString("ja-JP")}
+          </time>
+        </div>
         <h1>{note.data.title}</h1>
         <p>{note.data.description}</p>
+        {
+          note.data.tags.length > 0 && (
+            <ul class="article-tags" aria-label="記事タグ">
+              {note.data.tags.map((tag) => (
+                <li>{tag}</li>
+              ))}
+            </ul>
+          )
+        }
       </header>
       <div class="prose">
         <Content />
       </div>
     </article>
   </div>
+  <script is:inline>
+    const tocNav = document.querySelector(".note-toc nav");
+    const tocLinks = [...document.querySelectorAll(".toc-link")];
+    const articleHeadings = tocLinks
+      .map((link) => {
+        const id = link.getAttribute("href")?.slice(1);
+        return id ? document.getElementById(decodeURIComponent(id)) : null;
+      })
+      .filter(Boolean);
+
+    if (tocLinks.length > 0 && articleHeadings.length > 0) {
+      let activeId = "";
+
+      const activateHeading = (id) => {
+        if (activeId === id) return;
+        activeId = id;
+
+        tocLinks.forEach((link) => {
+          const isCurrent = link.getAttribute("href") === `#${id}`;
+          link.classList.toggle("is-current", isCurrent);
+          if (isCurrent) {
+            link.setAttribute("aria-current", "true");
+            if (tocNav) {
+              const targetTop = link.offsetTop - tocNav.clientHeight * 0.42 + link.clientHeight / 2;
+              tocNav.scrollTo({
+                top: Math.max(0, targetTop),
+                behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                  ? "auto"
+                  : "smooth"
+              });
+            }
+          } else {
+            link.removeAttribute("aria-current");
+          }
+        });
+      };
+
+      const updateCurrentHeading = () => {
+        const guideLine = Math.min(window.innerHeight * 0.34, 260);
+        const currentHeading = articleHeadings.reduce((current, heading) => {
+          return heading.getBoundingClientRect().top <= guideLine ? heading : current;
+        }, articleHeadings[0]);
+
+        if (currentHeading?.id) {
+          activateHeading(currentHeading.id);
+        }
+      };
+
+      let ticking = false;
+      const requestTocUpdate = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          updateCurrentHeading();
+        });
+      };
+
+      updateCurrentHeading();
+      window.addEventListener("scroll", requestTocUpdate, { passive: true });
+      window.addEventListener("resize", requestTocUpdate);
+    }
+  </script>
 </BaseLayout>

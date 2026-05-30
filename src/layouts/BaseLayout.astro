@@ -4,6 +4,7 @@ const {
   description = "Personal production notes for Yukino's projects."
 } = Astro.props;
 
+const basePath = import.meta.env.BASE_URL;
 const gaMeasurementId = "G-8WPQNSFFEQ";
 ---
 
@@ -21,13 +22,13 @@ const gaMeasurementId = "G-8WPQNSFFEQ";
       gtag("js", new Date());
       gtag("config", gaMeasurementId);
     </script>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href={`${basePath}styles.css`} />
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="/">Yukino Notes</a>
+      <a class="brand" href={basePath}>Yukino Notes</a>
       <nav aria-label="Primary navigation">
-        <a href="/">Notes</a>
+        <a href={basePath}>Notes</a>
         <a href="https://yukinooooooosan.cc/">Profile</a>
       </nav>
     </header>
