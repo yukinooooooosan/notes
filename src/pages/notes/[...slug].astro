@@ -3,7 +3,8 @@ import { getCollection, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 export async function getStaticPaths() {
-  const notes = await getCollection("notes", ({ data }) => !data.draft);
+  const showDrafts = import.meta.env.DEV;
+  const notes = await getCollection("notes", ({ data }) => showDrafts || !data.draft);
 
   return notes.map((note) => ({
     params: { slug: note.id },
@@ -13,11 +14,12 @@ export async function getStaticPaths() {
 
 const { note } = Astro.props;
 const basePath = import.meta.env.BASE_URL;
+const showDrafts = import.meta.env.DEV;
 const { Content, headings } = await render(note);
 const tocHeadings = headings.filter(
   (heading) => heading.depth >= 2 && heading.depth <= 3
 );
-const latestNotes = (await getCollection("notes", ({ data }) => !data.draft))
+const latestNotes = (await getCollection("notes", ({ data }) => showDrafts || !data.draft))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
   .slice(0, 3);
 ---
