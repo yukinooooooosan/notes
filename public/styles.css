@@ -520,10 +520,20 @@ h2 {
   }
 
   .note-layout {
-    display: block;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .note-detail {
+    display: contents;
+  }
+
+  .article-header {
+    order: 1;
   }
 
   .note-toc {
+    order: 2;
     position: static;
     margin-bottom: 28px;
     padding-top: 0;
@@ -534,6 +544,7 @@ h2 {
   }
 
   .note-sidebar {
+    order: 4;
     position: static;
     margin-bottom: 32px;
     padding-top: 0;
@@ -552,5 +563,9 @@ h2 {
 
   .note-item p {
     margin-bottom: 0;
+  }
+
+  .prose {
+    order: 3;
   }
 }
